@@ -1,5 +1,8 @@
 
+using Enums;
+using System;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 namespace Structs
 {
@@ -28,8 +31,12 @@ namespace Structs
     }
 
 
-    public struct TileData
+    [Serializable]
+    public struct NoiseClampData
     {
-
+        public TileType type;
+        public Tile tiles;
+        public float clampValue;
+        public Color test_color;
     }
 }

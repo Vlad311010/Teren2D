@@ -1,4 +1,6 @@
+using Structs;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -23,7 +25,8 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [SerializeField] Tilemap onGroundTilemap;
 
     [Header("Tiles")]
-    [SerializeField] Tile groundTile;
+    [SerializeField] Tile defaultGroundTile;
+    [SerializeField] NoiseClampData[] tiles;
 
 
     private Vector3 origin;
@@ -60,9 +63,25 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         {
             for (int x = 0; x < size.x; x++)
             {
-                Tile tile = Instantiate(groundTile);
-                tile.color = Color.Lerp(Color.white, Color.black, grid.GetCell(x, y).NoiseValue);
-                TilemapUtils.SetTile(groundTilemap, grid.GetWorldPosition(x, y), tile);
+                float noiseValue = grid.GetCell(x, y).NoiseValue;
+                NoiseClampData clampData = CalculateTileType(noiseValue, tiles);
+
+                Tilemap placeOn;
+                Tile tile;
+                if (clampData.type == Enums.TileType.Ground) 
+                {
+                    placeOn = groundTilemap;
+                    tile = clampData.tiles;
+                    TilemapUtils.SetTile(placeOn, grid.GetWorldPosition(x, y), tile);
+                }
+                else
+                {
+                    placeOn = onGroundTilemap;
+                    tile = clampData.tiles;
+                    TilemapUtils.SetTile(groundTilemap, grid.GetWorldPosition(x, y), defaultGroundTile); // set ground tile 
+                    TilemapUtils.SetTile(placeOn, grid.GetWorldPosition(x, y), tile); // set ground tile
+                }
+                
             }
         }
     }
@@ -75,14 +94,17 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     }
 
-    private void OnValidate()
+    private NoiseClampData CalculateTileType(float noiseValue, NoiseClampData[] clampData)
     {
-        if (Application.isPlaying)
+        for (int i = 0; i < clampData.Length; i++)
         {
-            // Generate();
+            if (noiseValue < clampData[i].clampValue)
+                return clampData[i];
         }
-    }
 
+        return clampData.Last();
+        
+    }
 
     private void OnDrawGizmos()
     {
