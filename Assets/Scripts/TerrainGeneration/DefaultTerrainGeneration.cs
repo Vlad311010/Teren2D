@@ -1,5 +1,7 @@
 using Structs;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
@@ -28,11 +30,16 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [SerializeField] Tile defaultGroundTile;
     [SerializeField] NoiseClampData[] tiles;
 
+    [SerializeField] Vector2Int riverStart;
+    [SerializeField] Vector2Int rivereEnd;
+
 
     private Vector3 origin;
     private GridSystem<TerrainCell> grid;
     private float[,] noiseMap;
     private System.Random rng;
+
+    private List<TerrainCell> path;
 
     private void Awake()
     {
@@ -69,7 +76,11 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     protected void LayoutPostprocessing()
     {
-
+        /*Debug.Log(Pathfinding.FindPath<TerrainCell>(grid, grid.GetCell(riverStart), grid.GetCell(rivereEnd), out path));
+        foreach (TerrainCell cell in path)
+        {
+            cell.NoiseValue = -1;
+        }*/
     }
 
     protected void PathsGeneration()
@@ -88,7 +99,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
                 Tilemap placeOn;
                 TileBase tile;
-                if (clampData.layer == 0)
+                if (clampData.layer <= 0)
                 {
                     placeOn = layers[0];
                     tile = clampData.GetRandomTile(rng);
@@ -114,11 +125,19 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     {
         for (int i = 0; i < clampData.Length; i++)
         {
-            if (noiseValue < clampData[i].clampValue)
+            if (noiseValue <= clampData[i].clampValue)
                 return clampData[i];
         }
 
         return clampData.Last();
+    }
+
+    private void OnValidate()
+    {
+        for (int i = 0; i < tiles.Length; i++)
+        {
+            tiles[i].layer = Math.Clamp(tiles[i].layer, 0, layers.Length - 1);
+        }
     }
 
     private void OnDrawGizmos()
@@ -130,5 +149,15 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         if (grid == null) return;
 
         grid.DebugDraw();
+
+        if (path != null)
+        {
+            Gizmos.color = Color.yellow;
+            foreach (GridCellBase cell in path)
+            {
+                Gizmos.DrawCube(grid.GetWorldPosition(cell.Coordinates), Vector3.one);
+            }
+
+        }
     }
 }

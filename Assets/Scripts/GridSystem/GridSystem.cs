@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
 [Serializable]
-public class GridSystem<T>
+public class GridSystem<T> where T : GridCellBase
 {
     public event EventHandler<OnCellChangedEventArgs> OnCellChanged;
     public class OnCellChangedEventArgs : EventArgs
@@ -71,6 +72,68 @@ public class GridSystem<T>
         return grid[x, y];
     }
 
+    public List<T> GetNeighboursCardinal(int x, int y)
+    {
+        List<T> neighbours = new List<T>();
+
+        Vector2Int left = new Vector2Int(x - 1, y);
+        Vector2Int right = new Vector2Int(x + 1, y);
+        Vector2Int up = new Vector2Int(x, y + 1);
+        Vector2Int down = new Vector2Int(x, y - 1);
+
+        if (ValidateCoordinates(left))
+            neighbours.Add(GetCell(left));
+
+        if (ValidateCoordinates(right))
+            neighbours.Add(GetCell(right));
+
+        if (ValidateCoordinates(up))
+            neighbours.Add(GetCell(up));
+
+        if (ValidateCoordinates(down))
+            neighbours.Add(GetCell(down));
+
+        return neighbours;
+    }
+
+    public List<T> GetNeighboursDiagonal(int x, int y)
+    {
+        List<T> neighbours = new List<T>();
+
+        Vector2Int upLeft = new Vector2Int(x - 1, y + 1);
+        Vector2Int upRight = new Vector2Int(x + 1, y + 1);
+        Vector2Int donwLeft = new Vector2Int(x - 1, y - 1);
+        Vector2Int downRight = new Vector2Int(x + 1, y - 1);
+
+        if (ValidateCoordinates(upLeft))
+            neighbours.Add(GetCell(upLeft));
+
+        if (ValidateCoordinates(upRight))
+            neighbours.Add(GetCell(upRight));
+
+        if (ValidateCoordinates(donwLeft))
+            neighbours.Add(GetCell(donwLeft));
+
+        if (ValidateCoordinates(downRight))
+            neighbours.Add(GetCell(downRight));
+
+        return neighbours;
+    }
+
+
+    public List<T> GetNeighboursAll(Vector2Int coordinates)
+    {
+        return GetNeighboursAll(coordinates.x, coordinates.y);
+    }
+
+    public List<T> GetNeighboursAll(int x, int y)
+    {
+        List<T> neighbours = GetNeighboursCardinal(x, y);
+        neighbours.AddRange(GetNeighboursDiagonal(x, y));
+        return neighbours;
+    }
+
+
     public void SetCell(int x, int y, T cell)
     {
         if (x >= 0 && y >= 0 && x < width && y < height)
@@ -101,10 +164,10 @@ public class GridSystem<T>
                 Debug.DrawLine(cellPos, GetWorldPosition(x + 1, y), Color.white);
                 Debug.DrawLine(cellPos, GetWorldPosition(x, y + 1), Color.white);
 
-                #if UNITY_EDITOR
+                /*#if UNITY_EDITOR
                     GUI.color = Color.black;
                     Handles.Label(cellPos + Vector3.one * cellSize / 2, grid[x,y].ToString());
-                #endif
+                #endif*/
             }
         }
         Debug.DrawLine(GetWorldPosition(0, height), GetWorldPosition(width, height), Color.white);

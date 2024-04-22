@@ -1,30 +1,22 @@
-using Structs;
 using System;
-using UnityEngine;
 
 [Serializable]
-public class TerrainCell
+public class TerrainCell : GridCellBase
 {
-    public Vector2Int Coordinates { get => new Vector2Int(x, y); }
-    public float NoiseValue => noiseValue;
+    public float NoiseValue { get => noiseValue; set => noiseValue = value; }
 
     private GridSystem<TerrainCell> grid;
-    private int x;
-    private int y;
     private float noiseValue;
 
-    public TerrainCell(GridSystem<TerrainCell> grid, int x, int y, float noiseValue)
+    public TerrainCell(GridSystem<TerrainCell> grid, int x, int y, float noiseValue) : base(x, y)
     {
         this.grid = grid;
-        this.x = x;
-        this.y = y;
         this.noiseValue = noiseValue;
     }
 
     public override string ToString()
     {
-        return noiseValue.ToString("P0");
-        // return x + "." + y + " : " + noiseValue;
+        return x + "." + y + " : " + noiseValue.ToString("P0");
     }
-        
+
 }

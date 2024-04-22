@@ -5,15 +5,10 @@ using UnityEngine;
 using Structs;
 
 public class Pathfinding
-{ 
-}
-
-/*
-public class Pathfinding
 {
-    private static List<GridCell> ReconstructPath(Dictionary<GridCell, GridCell> cameFromMap, GridCell current)
+    private static List<T> ReconstructPath<T>(Dictionary<T, T> cameFromMap, T current) where T : GridCellBase
     {
-        List<GridCell> path = new List<GridCell>() { current };
+        List<T> path = new List<T>() { current };
         while (cameFromMap.ContainsKey(current))
         {
             current = cameFromMap[current];
@@ -23,7 +18,7 @@ public class Pathfinding
         return path;
     }
 
-    public static bool FindPath(GridCell start, GridCell destination, out List<GridCell> path)
+    public static bool FindPath<T>(GridSystem<T> grid, T start, T destination, out List<T> path) where T : GridCellBase
     {
         if (start == null || destination == null) 
         {
@@ -31,25 +26,25 @@ public class Pathfinding
             return false;
         }
 
-        path = new List<GridCell>();
-        List<GridCell> openSet = new List<GridCell>() { start };
-        Dictionary<GridCell, GridCell> cameFrom = new Dictionary<GridCell, GridCell>();
+        path = new List<T>();
+        List<T> openSet = new List<T>() { start };
+        Dictionary<T, T> cameFrom = new Dictionary<T, T>();
         
-        Dictionary<GridCell, float> gScore = new Dictionary<GridCell, float>() 
+        Dictionary<T, float> gScore = new Dictionary<T, float>() 
         {
             { start, 0 }
         };
 
-        Dictionary<GridCell, float> fScore = new Dictionary<GridCell, float>
+        Dictionary<T, float> fScore = new Dictionary<T, float>
         {
-            { start, Heuristic(start, destination) }
+            { start, Heuristic(grid, start, destination) }
         };
 
 
         while (openSet.Count > 0)
         {
             openSet = openSet.OrderBy(e => fScore.GetOrInit(e, int.MaxValue)).ToList();
-            GridCell current = openSet[0];
+            T current = openSet[0];
 
             if (current == destination)
             {
@@ -57,14 +52,14 @@ public class Pathfinding
                 return true;
             }
             openSet.RemoveAt(0);
-            foreach (GridCell neighbor in current.adjacent) 
+            foreach (T neighbor in grid.GetNeighboursAll(current.Coordinates))
             {
                 float tenativeScore = gScore.GetOrInit(current, int.MaxValue) + 1;
                 if (tenativeScore < gScore.GetOrInit(neighbor, int.MaxValue))
                 {
                     cameFrom.SetOrInit(neighbor, current);
                     gScore.SetOrInit(neighbor, tenativeScore);
-                    fScore.SetOrInit(neighbor, tenativeScore + Heuristic(start, destination));
+                    fScore.SetOrInit(neighbor, tenativeScore + Heuristic(grid, start, destination));
                     if (!openSet.Contains(neighbor))
                     {
                         openSet.Add(neighbor);
@@ -77,9 +72,8 @@ public class Pathfinding
     }
 
     
-
-    private static float Heuristic(GridCell cell, GridCell destination)
+    private static float Heuristic<T>(GridSystem<T> grid, T cell, T destination) where T : GridCellBase
     {
-        return Vector3.Distance(cell.worldPosition, destination.worldPosition);
+        return Vector3.Distance(grid.GetWorldPosition(cell.Coordinates), grid.GetWorldPosition(destination.Coordinates));
     }
-}*/
+}
