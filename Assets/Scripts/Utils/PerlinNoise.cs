@@ -4,26 +4,24 @@ public class PerlinNoise
 {
     const int randomRange = 10000;
 
-    public static float[,] GetNoiseMap(int width, int height, Vector2 offset, float scale, int octaves, float persistance, float lacunarity, int seed)
+    public static float[,] GetNoiseMap(System.Random rng, int width, int height, Vector2 offset, float scale, int octaves, float persistance, float lacunarity)
     {
         float[,] noiseMap = new float[width, height];
 
         scale = scale == 0 ? 0.0001f : scale;
         Vector2[] octavesOffsets;
-        System.Random random;
         float minHeight = float.MaxValue;
         float maxHeight = float.MinValue;
 
         float halfWidth = width / 2;
         float halfHeight = height / 2;
 
-        random = new System.Random(seed);
         octavesOffsets = new Vector2[octaves];
         for (int i = 0; i < octaves; i++)
         {
             octavesOffsets[i] = new Vector2(
-                random.Next(-randomRange, randomRange) + offset.x, 
-                random.Next(-randomRange, randomRange) + offset.y
+                rng.Next(-randomRange, randomRange) + offset.x,
+                rng.Next(-randomRange, randomRange) + offset.y
                 );
         }
 

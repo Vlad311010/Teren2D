@@ -4,7 +4,8 @@ namespace Enums
     public enum TileType
     {
         Ground = 0,
-        Grass = 1,
-        Tree = 2
+        GrassGround = 1,
+        Grass = 2,
+        Tree = 3
     }
 }

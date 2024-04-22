@@ -1,6 +1,7 @@
 using Structs;
 using System;
 using System.Linq;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -21,8 +22,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
 
     [Header("Tilemaps")]
-    [SerializeField] Tilemap groundTilemap;
-    [SerializeField] Tilemap onGroundTilemap;
+    [SerializeField] Tilemap[] layers;
 
     [Header("Tiles")]
     [SerializeField] Tile defaultGroundTile;
@@ -32,6 +32,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     private Vector3 origin;
     private GridSystem<TerrainCell> grid;
     private float[,] noiseMap;
+    private System.Random rng;
 
     private void Awake()
     {
@@ -42,6 +43,11 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [ContextMenu("Generate")]
     public void Generate()
     {
+        rng = new System.Random(seed);
+        foreach (Tilemap tilemapLayer in layers) 
+        {
+            tilemapLayer.ClearAllTiles();
+        }
         NoiseGeneration();
         GridGeneration();
         LayoutGeneration();
@@ -49,7 +55,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     public void NoiseGeneration()
     {
-        noiseMap = PerlinNoise.GetNoiseMap(size.x, size.y, offset, scale, octaves, persistance, lacunarity, seed);
+        noiseMap = PerlinNoise.GetNoiseMap(rng, size.x, size.y, offset, scale, octaves, persistance, lacunarity);
     }
 
     public void GridGeneration()
@@ -67,21 +73,20 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
                 NoiseClampData clampData = CalculateTileType(noiseValue, tiles);
 
                 Tilemap placeOn;
-                Tile tile;
-                if (clampData.type == Enums.TileType.Ground) 
+                TileBase tile;
+                if (clampData.layer == 0)
                 {
-                    placeOn = groundTilemap;
-                    tile = clampData.tiles;
+                    placeOn = layers[0];
+                    tile = clampData.GetRandomTile(rng);
                     TilemapUtils.SetTile(placeOn, grid.GetWorldPosition(x, y), tile);
                 }
                 else
                 {
-                    placeOn = onGroundTilemap;
-                    tile = clampData.tiles;
-                    TilemapUtils.SetTile(groundTilemap, grid.GetWorldPosition(x, y), defaultGroundTile); // set ground tile 
-                    TilemapUtils.SetTile(placeOn, grid.GetWorldPosition(x, y), tile); // set ground tile
+                    placeOn = layers[clampData.layer];
+                    tile = clampData.GetRandomTile(rng);
+                    TilemapUtils.SetTile(layers[0], grid.GetWorldPosition(x, y), defaultGroundTile); // set ground tile 
+                    TilemapUtils.SetTile(placeOn, grid.GetWorldPosition(x, y), tile); // set tile on proper layer
                 }
-                
             }
         }
     }
@@ -89,6 +94,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     public void AdditionalLayoutGeneration()
     {
     }
+
     public void PathsGeneration()
     {
 
@@ -103,7 +109,6 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         }
 
         return clampData.Last();
-        
     }
 
     private void OnDrawGizmos()

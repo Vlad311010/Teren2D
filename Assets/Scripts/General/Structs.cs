@@ -34,9 +34,27 @@ namespace Structs
     [Serializable]
     public struct NoiseClampData
     {
+        public int layer;
         public TileType type;
-        public Tile tiles;
+        public TileProbability[] tiles;
         public float clampValue;
-        public Color test_color;
+
+        public TileBase GetRandomTile(System.Random rng)
+        {
+            float value = rng.UnitInterval();
+            for (int i = 0; i < tiles.Length; i++)
+            {
+                if (value < tiles[i].highProbability)
+                    return tiles[i].tile;
+            }
+            return tiles[0].tile;
+        }
+    }
+
+    [Serializable]
+    public struct TileProbability
+    {
+        public TileBase tile;
+        public float highProbability;
     }
 }
