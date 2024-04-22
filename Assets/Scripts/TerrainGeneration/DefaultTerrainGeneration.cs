@@ -48,22 +48,36 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         {
             tilemapLayer.ClearAllTiles();
         }
+
         NoiseGeneration();
-        GridGeneration();
         LayoutGeneration();
+        LayoutPostprocessing();
+        PathsGeneration();
+        FillTilemaps();
     }
 
-    public void NoiseGeneration()
+    protected void NoiseGeneration()
     {
         noiseMap = PerlinNoise.GetNoiseMap(rng, size.x, size.y, offset, scale, octaves, persistance, lacunarity);
     }
 
-    public void GridGeneration()
+    protected void LayoutGeneration()
     {
-        grid = new GridSystem<TerrainCell>(size.x, size.y, cellSize, origin, (GridSystem<TerrainCell> grid, int x, int y) => new TerrainCell(grid, x, y, noiseMap[x, y]));
+        grid = new GridSystem<TerrainCell>(size.x, size.y, cellSize, origin, CreateTerrainCell);
     }
 
-    public void LayoutGeneration()
+
+    protected void LayoutPostprocessing()
+    {
+
+    }
+
+    protected void PathsGeneration()
+    {
+
+    }
+
+    protected void FillTilemaps()
     {
         for (int y = 0; y < size.y; y++)
         {
@@ -91,13 +105,9 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         }
     }
 
-    public void AdditionalLayoutGeneration()
+    private TerrainCell CreateTerrainCell(GridSystem<TerrainCell> grid, int x, int y)
     {
-    }
-
-    public void PathsGeneration()
-    {
-
+        return new TerrainCell(grid, x, y, noiseMap[x, y]);
     }
 
     private NoiseClampData CalculateTileType(float noiseValue, NoiseClampData[] clampData)

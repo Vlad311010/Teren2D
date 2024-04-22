@@ -35,7 +35,6 @@ namespace Structs
     public struct NoiseClampData
     {
         public int layer;
-        public TileType type;
         public TileProbability[] tiles;
         public float clampValue;
 
