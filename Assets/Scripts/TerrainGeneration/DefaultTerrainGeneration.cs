@@ -216,49 +216,49 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     private void FormRiver(List<TerrainCell> riverPath, int riverWidth)
     {
-        List<RiverAffectedCellData> riverAffectedCells = CollectRiverAffectedCells(riverPath, riverWidth);
-        foreach (RiverAffectedCellData cell in riverAffectedCells)
+        List<TerrainCell> riverAffectedCells = CollectRiverAffectedCells(riverPath, riverWidth);
+        foreach (TerrainCell cell in riverAffectedCells)
         {
-            
-            if (cell.distanceFromMainPath < riverMinimalWidth)
-            {
-                cell.cell.NoiseValue = -1;
-            }
+            Vector2Int nearestRiverCellByX = riverPath.Where(c => c.Coordinates.x == cell.Coordinates.x).Select(c => c.Coordinates).FirstOrDefault();
+            Vector2Int nearestRiverCellByY = riverPath.Where(c => c.Coordinates.y == cell.Coordinates.y).Select(c => c.Coordinates).FirstOrDefault();
+
+            int distanceFromMainPath;
+            if (nearestRiverCellByX == null || nearestRiverCellByY == null)
+                distanceFromMainPath = 0;
+            else 
+                distanceFromMainPath = Math.Min(Math.Abs(nearestRiverCellByX.x - cell.Coordinates.x), Math.Abs(nearestRiverCellByY.y - cell.Coordinates.y));
+
+            if (distanceFromMainPath < riverMinimalWidth)
+                cell.NoiseValue = -1;
             else
-            {
-                // cell.cell.NoiseValue -= UnityEngine.Random.value;
-                cell.cell.NoiseValue = ((-1/ cell.distanceFromMainPath) + cell.cell.NoiseValue) / 2;
-            }
+                cell.NoiseValue = ((-1 / distanceFromMainPath * distanceFromMainPath) + cell.NoiseValue) / 2;
             
         }
     }
 
-    private List<RiverAffectedCellData> CollectRiverAffectedCells(List<TerrainCell> riverPath, int maxDepth)
+    private List<TerrainCell> CollectRiverAffectedCells(List<TerrainCell> riverPath, int maxDepth)
     {
-        void CollectAffectedCells(List<RiverAffectedCellData> riverAffectedCells, TerrainCell cell, int depth)
+        void CollectAffectedCells(List<TerrainCell> riverAffectedCells, TerrainCell cell, int depth)
         {
             if (depth == 0) return;
 
             int distance = maxDepth - depth;
-            RiverAffectedCellData collectedRiverCellData = riverAffectedCells.FirstOrDefault(c => c.cell.Equals(cell));
 
-            if (collectedRiverCellData == null|| (collectedRiverCellData.distanceFromMainPath > distance))
-            {
-                if (collectedRiverCellData != null)
-                    collectedRiverCellData.distanceFromMainPath = distance;
-                else
-                {
-                    riverAffectedCells.Add(new RiverAffectedCellData(cell, distance));
-                }
-            }
+            TerrainCell collectedRiverCellData = riverAffectedCells.FirstOrDefault(c => c.Equals(cell));
+
+            if (!riverAffectedCells.Contains(cell))
+                riverAffectedCells.Add(cell);
 
             foreach (TerrainCell neighbour in grid.GetNeighboursCardinal(cell.Coordinates))
             {
+                if (riverAffectedCells.Contains(neighbour))
+                    continue;
+
                 CollectAffectedCells(riverAffectedCells, neighbour, depth - 1);
             }
         }
 
-        List<RiverAffectedCellData> riverAffectedCells = new List<RiverAffectedCellData>();
+        List<TerrainCell> riverAffectedCells = new List<TerrainCell>();
         foreach (TerrainCell cell in riverPath)
         {
             CollectAffectedCells(riverAffectedCells, cell, maxDepth);
