@@ -1,9 +1,7 @@
 using Structs;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -21,6 +19,10 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [SerializeField] float persistance;
     [SerializeField] float lacunarity;
     [SerializeField] int seed;
+
+    [Header("River settings")]
+    [SerializeField] int riverAffectionRange;
+    [SerializeField] int riverMinimalWidth;
 
 
     [Header("Tilemaps")]
@@ -46,6 +48,8 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         origin = transform.position;
         Generate();
     }
+
+    #region GeneratorFunctions
 
     [ContextMenu("Generate")]
     public void Generate()
@@ -76,12 +80,18 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     protected void LayoutPostprocessing()
     {
-        /*Debug.Log(Pathfinding.FindPath<TerrainCell>(grid, grid.GetCell(riverStart), grid.GetCell(rivereEnd), out path));
-        foreach (TerrainCell cell in path)
+        Debug.Log("Valid path: " + Pathfinding.FindPath<TerrainCell>(grid, grid.GetCell(riverStart), grid.GetCell(rivereEnd), out path));
+        FormRiver(path, riverAffectionRange);
+        /*foreach (TerrainCell cell in path)
         {
-            cell.NoiseValue = -1;
+            ChangeNoiseValueWithSpread(cell, -1, riverWidth, 
+                (md, d, n) =>
+                {
+                    return Math.Clamp(n / 2, -1, -0.15f);
+                });
         }*/
     }
+
 
     protected void PathsGeneration()
     {
@@ -99,7 +109,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
                 Tilemap placeOn;
                 TileBase tile;
-                if (clampData.layer <= 0)
+                if (clampData.layer == 0)
                 {
                     placeOn = layers[0];
                     tile = clampData.GetRandomTile(rng);
@@ -115,6 +125,143 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
             }
         }
     }
+    #endregion
+
+
+    #region RiverCreating
+    private class RiverAffectedCellData
+    {
+        public TerrainCell cell;
+        public int distanceFromMainPath;
+
+        public RiverAffectedCellData(TerrainCell cell, int distance)
+        {
+            this.cell = cell;
+            distanceFromMainPath = distance;
+        }
+
+
+        public override bool Equals(object obj)
+        {
+            return cell.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return cell.GetHashCode();
+        }
+    }
+
+    private void FormRiver(List<TerrainCell> riverPath, int riverWidth)
+    {
+        List<RiverAffectedCellData> riverAffectedCells = CollectRiverAffectedCells(riverPath, riverWidth);
+        foreach (RiverAffectedCellData cell in riverAffectedCells)
+        {
+            
+            if (cell.distanceFromMainPath < riverMinimalWidth)
+            {
+                cell.cell.NoiseValue = -1;
+            }
+            else
+            {
+                cell.cell.NoiseValue -= rng.UnitInterval() / 8;
+            }
+            
+        }
+
+        /*List<TerrainCell> affectedCells = new List<TerrainCell>(riverPath);
+        List<TerrainCell> closedList = new List<TerrainCell>();
+
+        while (affectedCells.Count > 0)
+        {
+            TerrainCell cell = affectedCells[0];
+            if (!closedList.Contains(cell))
+            {
+                ChangeNoiseValueWithSpread(cell, -1, riverWidth,
+                    (maxDepth, depth, noiseValue) =>
+                    {
+                        if (depth < maxDepth - 3)
+                            return -rng.UnitInterval() / 10;
+                        else
+                            return noiseValue;
+                        return Math.Clamp(noiseValue / 2, -1, -0.01f);
+                    });
+
+                closedList.Add(cell);
+            }
+
+            affectedCells.Remove(cell);
+        }*/
+    }
+
+    private List<RiverAffectedCellData> CollectRiverAffectedCells(List<TerrainCell> riverPath, int maxDepth)
+    {
+        void CollectAffectedCells(List<RiverAffectedCellData> riverAffectedCells, TerrainCell cell, int depth)
+        {
+            if (depth == 0) return;
+
+            int distance = maxDepth - depth;
+            RiverAffectedCellData collectedRiverCellData = riverAffectedCells.FirstOrDefault(c => c.cell.Equals(cell));
+            // Debug.Log((collectedRiverCellData == null) + " " + riverAffectedCells.Count);
+
+            if (collectedRiverCellData == null|| (collectedRiverCellData.distanceFromMainPath > distance))
+            {
+                if (collectedRiverCellData != null)
+                    collectedRiverCellData.distanceFromMainPath = distance;
+                else
+                {
+                    riverAffectedCells.Add(new RiverAffectedCellData(cell, distance));
+                }
+            }
+
+            foreach (TerrainCell neighbour in grid.GetNeighboursCardinal(cell.Coordinates))
+            {
+                CollectAffectedCells(riverAffectedCells, neighbour, depth - 1);
+            }
+        }
+
+        List<RiverAffectedCellData> riverAffectedCells = new List<RiverAffectedCellData>();
+        foreach (TerrainCell cell in riverPath)
+        {
+            CollectAffectedCells(riverAffectedCells, cell, maxDepth);
+        }
+        return riverAffectedCells;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="cell"></param>
+    /// <param name="noiseChange"></param>
+    /// <param name="radius"></param>
+    /// <param name="influenceChange">Parameters: max depth, current depth, noise value</param>
+    private List<TerrainCell> ChangeNoiseValueWithSpread(TerrainCell cell, float noiseChange, int radius, Func<int, int, float, float> influenceChange)
+    {
+        void ChangeNoiseValue(List<TerrainCell> affectedCells, TerrainCell cell, float newNoiseValue, int depth)
+        {
+            cell.NoiseValue += influenceChange(radius, depth, newNoiseValue);
+            if (depth == 0) return;
+            
+            affectedCells.Add(cell);
+
+            foreach (TerrainCell neighbour in grid.GetNeighboursCardinal(cell.Coordinates))
+            {
+                if (affectedCells.Contains(neighbour))
+                    continue;
+
+                ChangeNoiseValue(affectedCells, neighbour, newNoiseValue, depth - 1);
+            }
+
+            
+        }
+
+        List<TerrainCell> affectedCells = new List<TerrainCell>();
+        ChangeNoiseValue(affectedCells, cell, noiseChange, radius);
+
+        return affectedCells;
+    }
+
+    #endregion
 
     private TerrainCell CreateTerrainCell(GridSystem<TerrainCell> grid, int x, int y)
     {
@@ -132,6 +279,8 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         return clampData.Last();
     }
 
+
+    #region Editor
     private void OnValidate()
     {
         for (int i = 0; i < tiles.Length; i++)
@@ -160,4 +309,5 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
         }
     }
+    #endregion
 }

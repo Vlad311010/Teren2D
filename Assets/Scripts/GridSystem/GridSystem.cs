@@ -72,6 +72,11 @@ public class GridSystem<T> where T : GridCellBase
         return grid[x, y];
     }
 
+    public List<T> GetNeighboursCardinal(Vector2Int coordinates)
+    {
+        return GetNeighboursCardinal(coordinates.x, coordinates.y);
+    }
+
     public List<T> GetNeighboursCardinal(int x, int y)
     {
         List<T> neighbours = new List<T>();

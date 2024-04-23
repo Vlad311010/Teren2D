@@ -53,7 +53,7 @@ namespace Structs
     [Serializable]
     public struct TileProbability
     {
-        public TileBase tile;
+        public TileBase tile;   
         public float highProbability;
     }
 }
