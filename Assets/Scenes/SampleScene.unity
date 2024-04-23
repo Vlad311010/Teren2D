@@ -7106,7 +7106,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 3
-      m_TileSpriteIndex: 9
+      m_TileSpriteIndex: 17
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -12101,7 +12101,7 @@ Tilemap:
     m_Data: {fileID: 1615245575, guid: cf245ea91adca7747ab1cda5ba35594b, type: 3}
   - m_RefCount: 83
     m_Data: {fileID: -865948409, guid: cf245ea91adca7747ab1cda5ba35594b, type: 3}
-  - m_RefCount: 228
+  - m_RefCount: 227
     m_Data: {fileID: -450465080, guid: 97ec1b1829dce24458c6733c134ec06d, type: 3}
   - m_RefCount: 56
     m_Data: {fileID: 2103722339, guid: cf245ea91adca7747ab1cda5ba35594b, type: 3}
@@ -12117,8 +12117,8 @@ Tilemap:
     m_Data: {fileID: 0}
   - m_RefCount: 0
     m_Data: {fileID: 0}
-  - m_RefCount: 0
-    m_Data: {fileID: 0}
+  - m_RefCount: 1
+    m_Data: {fileID: 1383332499, guid: 97ec1b1829dce24458c6733c134ec06d, type: 3}
   - m_RefCount: 2
     m_Data: {fileID: 1449999947, guid: 97ec1b1829dce24458c6733c134ec06d, type: 3}
   - m_RefCount: 1
@@ -37843,8 +37843,10 @@ MonoBehaviour:
   persistance: 0.5
   lacunarity: 1.8
   seed: 0
-  riverAffectionRange: 7
-  riverMinimalWidth: 1
+  riverAffectionRange: 3
+  riverMinimalWidth: 2
+  riverMidpoints: 2
+  riverWaving: 8
   layers:
   - {fileID: 761757564}
   - {fileID: 1289623489}
@@ -37880,7 +37882,7 @@ MonoBehaviour:
       highProbability: 0.9875
     - tile: {fileID: 11400000, guid: eb86ec0e4da09614fa17c7ce8a421694, type: 2}
       highProbability: 1
-    clampValue: 0.65
+    clampValue: 0.7
   - layer: 2
     tiles:
     - tile: {fileID: 11400000, guid: fa62cd8802e6c934bb2184994d322947, type: 2}
@@ -37891,8 +37893,6 @@ MonoBehaviour:
     - tile: {fileID: 11400000, guid: 797331116406a8d4e9ae6ea531cfd24a, type: 2}
       highProbability: 1
     clampValue: 1
-  riverStart: {x: 10, y: 0}
-  rivereEnd: {x: 10, y: 49}
 --- !u!4 &1895329386
 Transform:
   m_ObjectHideFlags: 0

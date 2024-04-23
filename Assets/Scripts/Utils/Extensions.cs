@@ -43,4 +43,9 @@ public static class Extensions
     {
         return Random.Range(vector.x, vector.y + 1);
     }
+
+    public static Vector2Int Swap(this Vector2Int vector)
+    {
+        return new Vector2Int(vector.y, vector.x);
+    }
 }

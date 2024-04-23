@@ -1,9 +1,11 @@
 using Structs;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.UIElements;
 
 public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 {
@@ -23,6 +25,8 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [Header("River settings")]
     [SerializeField] int riverAffectionRange;
     [SerializeField] int riverMinimalWidth;
+    [SerializeField] int riverMidpoints;
+    [SerializeField] int riverWaving;
 
 
     [Header("Tilemaps")]
@@ -32,19 +36,14 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [SerializeField] Tile defaultGroundTile;
     [SerializeField] NoiseClampData[] tiles;
 
-    [SerializeField] Vector2Int riverStart;
-    [SerializeField] Vector2Int rivereEnd;
-
-
     private Vector3 origin;
     private GridSystem<TerrainCell> grid;
     private float[,] noiseMap;
     private System.Random rng;
 
-    private List<TerrainCell> path;
-
     private void Awake()
     {
+        
         origin = transform.position;
         Generate();
     }
@@ -55,6 +54,8 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     public void Generate()
     {
         rng = new System.Random(seed);
+        UnityEngine.Random.InitState(seed);
+
         foreach (Tilemap tilemapLayer in layers) 
         {
             tilemapLayer.ClearAllTiles();
@@ -80,16 +81,77 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     protected void LayoutPostprocessing()
     {
-        Debug.Log("Valid path: " + Pathfinding.FindPath<TerrainCell>(grid, grid.GetCell(riverStart), grid.GetCell(rivereEnd), out path));
-        FormRiver(path, riverAffectionRange);
-        /*foreach (TerrainCell cell in path)
+        float rngValue = UnityEngine.Random.value;
+        Vector2Int riverAxis = rngValue < 0.5f ? new Vector2Int(1, 0) : new Vector2Int(0, 1); // determine if river horizontal or vertical
+
+        Vector2Int riverStart;
+        Vector2Int riverEnd;
+        List<Vector2Int> midpoints;
+
+        if (rngValue < 0.5f)
         {
-            ChangeNoiseValueWithSpread(cell, -1, riverWidth, 
-                (md, d, n) =>
-                {
-                    return Math.Clamp(n / 2, -1, -0.15f);
-                });
-        }*/
+            riverStart = new Vector2Int(UnityEngine.Random.Range(0, size.x), 0);
+            riverEnd = new Vector2Int
+                (
+                    Math.Clamp(UnityEngine.Random.Range(riverStart.x - riverWaving, riverStart.x + riverWaving), 0, size.x - 1),
+                    size.y - 1
+                );
+            midpoints = new List<Vector2Int>();
+
+            Vector2Int riverCursor = riverStart;
+            int riverRemainingLegth = size.y - 1;
+            for (int i = 0; i < riverMidpoints; i++)
+            {
+                int evenStepSize = riverRemainingLegth / riverMidpoints;
+                int waving = UnityEngine.Random.Range(-riverWaving, riverWaving);
+                int step = UnityEngine.Random.Range(0, evenStepSize * 2);
+                riverRemainingLegth -= step;
+
+                riverCursor.x = Math.Clamp(riverCursor.x + waving, 0, size.x - 1);
+                riverCursor.y = Math.Clamp(riverCursor.y + evenStepSize, 0, size.y - 1);
+                midpoints.Add(riverCursor);
+            }
+        }
+        else
+        {
+            riverStart = new Vector2Int(0, UnityEngine.Random.Range(0, size.y));
+            riverEnd = new Vector2Int
+                (
+                    size.x - 1,
+                    Math.Clamp(UnityEngine.Random.Range(riverStart.y - riverWaving, riverStart.y + riverWaving), 0, size.y - 1)
+                );
+            midpoints = new List<Vector2Int>();
+
+            Vector2Int riverCursor = riverStart;
+            int riverRemainingLegth = size.x - 1;
+            for (int i = 0; i < riverMidpoints; i++)
+            {
+                int evenStepSize = riverRemainingLegth / riverMidpoints;
+                int waving = UnityEngine.Random.Range(-riverWaving, riverWaving);
+                int step = UnityEngine.Random.Range(0, evenStepSize * 2);
+                riverRemainingLegth -= step;
+
+                riverCursor.y = Math.Clamp(riverCursor.y + waving, 0, size.y - 1);
+                riverCursor.x = Math.Clamp(riverCursor.x + evenStepSize, 0, size.x - 1);
+                midpoints.Add(riverCursor);
+            }
+        }
+
+        List<TerrainCell> completeRiverPath = new List<TerrainCell>();
+        List<TerrainCell> partialPath;
+
+        Pathfinding.FindPath(grid, grid.GetCell(riverStart), grid.GetCell(midpoints[0]), out partialPath);
+        completeRiverPath.AddRange(partialPath.SkipLast(1));
+        for (int i = 1; i < riverMidpoints; i++)
+        {
+            Pathfinding.FindPath(grid, grid.GetCell(midpoints[i-1]), grid.GetCell(midpoints[i]), out partialPath);
+            completeRiverPath.AddRange(partialPath.SkipLast(1));
+        }
+        Pathfinding.FindPath(grid, grid.GetCell(midpoints[riverMidpoints - 1]), grid.GetCell(riverEnd), out partialPath);
+        
+        completeRiverPath.AddRange(partialPath);
+
+        FormRiver(completeRiverPath, riverAffectionRange);
     }
 
 
@@ -164,34 +226,11 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
             }
             else
             {
-                cell.cell.NoiseValue -= rng.UnitInterval() / 8;
+                // cell.cell.NoiseValue -= UnityEngine.Random.value;
+                cell.cell.NoiseValue = ((-1/ cell.distanceFromMainPath) + cell.cell.NoiseValue) / 2;
             }
             
         }
-
-        /*List<TerrainCell> affectedCells = new List<TerrainCell>(riverPath);
-        List<TerrainCell> closedList = new List<TerrainCell>();
-
-        while (affectedCells.Count > 0)
-        {
-            TerrainCell cell = affectedCells[0];
-            if (!closedList.Contains(cell))
-            {
-                ChangeNoiseValueWithSpread(cell, -1, riverWidth,
-                    (maxDepth, depth, noiseValue) =>
-                    {
-                        if (depth < maxDepth - 3)
-                            return -rng.UnitInterval() / 10;
-                        else
-                            return noiseValue;
-                        return Math.Clamp(noiseValue / 2, -1, -0.01f);
-                    });
-
-                closedList.Add(cell);
-            }
-
-            affectedCells.Remove(cell);
-        }*/
     }
 
     private List<RiverAffectedCellData> CollectRiverAffectedCells(List<TerrainCell> riverPath, int maxDepth)
@@ -202,7 +241,6 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
             int distance = maxDepth - depth;
             RiverAffectedCellData collectedRiverCellData = riverAffectedCells.FirstOrDefault(c => c.cell.Equals(cell));
-            // Debug.Log((collectedRiverCellData == null) + " " + riverAffectedCells.Count);
 
             if (collectedRiverCellData == null|| (collectedRiverCellData.distanceFromMainPath > distance))
             {
@@ -226,39 +264,6 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
             CollectAffectedCells(riverAffectedCells, cell, maxDepth);
         }
         return riverAffectedCells;
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="cell"></param>
-    /// <param name="noiseChange"></param>
-    /// <param name="radius"></param>
-    /// <param name="influenceChange">Parameters: max depth, current depth, noise value</param>
-    private List<TerrainCell> ChangeNoiseValueWithSpread(TerrainCell cell, float noiseChange, int radius, Func<int, int, float, float> influenceChange)
-    {
-        void ChangeNoiseValue(List<TerrainCell> affectedCells, TerrainCell cell, float newNoiseValue, int depth)
-        {
-            cell.NoiseValue += influenceChange(radius, depth, newNoiseValue);
-            if (depth == 0) return;
-            
-            affectedCells.Add(cell);
-
-            foreach (TerrainCell neighbour in grid.GetNeighboursCardinal(cell.Coordinates))
-            {
-                if (affectedCells.Contains(neighbour))
-                    continue;
-
-                ChangeNoiseValue(affectedCells, neighbour, newNoiseValue, depth - 1);
-            }
-
-            
-        }
-
-        List<TerrainCell> affectedCells = new List<TerrainCell>();
-        ChangeNoiseValue(affectedCells, cell, noiseChange, radius);
-
-        return affectedCells;
     }
 
     #endregion
@@ -298,16 +303,6 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         if (grid == null) return;
 
         grid.DebugDraw();
-
-        if (path != null)
-        {
-            Gizmos.color = Color.yellow;
-            foreach (GridCellBase cell in path)
-            {
-                Gizmos.DrawCube(grid.GetWorldPosition(cell.Coordinates), Vector3.one);
-            }
-
-        }
     }
     #endregion
 }
