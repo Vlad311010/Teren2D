@@ -10,11 +10,11 @@ Small project on procedural terrain generation in 2D
 
 
 ## Screenshots
-![alt text](Assets/Screenshots/screenshot00.png "Screenshot 00") 
-![alt text](Assets/Screenshots/screenshot00Parameters.png "Parameters 00")
+![alt text](Assets/Screenshots/Screenshot00.png "Screenshot 00") 
+![alt text](Assets/Screenshots/Screenshot00Parameters.png "Parameters 00")
 
-![alt text](Assets/Screenshots/screenshot01.png "Screenshot 01")
-![alt text](Assets/Screenshots/screenshot01Parameters.png "Parameters 01")
+![alt text](Assets/Screenshots/Screenshot01.png "Screenshot 01")
+![alt text](Assets/Screenshots/Screenshot01Parameters.png "Parameters 01")
 
 
 ### Used graphic asset: https://cupnooble.itch.io/sprout-lands-asset-pack
