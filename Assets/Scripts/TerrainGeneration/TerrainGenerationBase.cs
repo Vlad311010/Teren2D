@@ -1,22 +1,27 @@
-using Structs;
 using UnityEngine;
 
 public abstract class TerrainGenerationBase : MonoBehaviour
 {
-    public abstract float[,] NoiseGeneration();
-    public abstract void GridGeneration();
-    public abstract void LayoutGeneration();
-    public abstract void AdditionalLayoutGeneration();
-    public abstract void PathsGeneration();
+    protected abstract void Clean();
+    protected abstract void Init(int seed);
+    protected abstract void NoiseGeneration();
+    protected abstract void LayoutGeneration();
+    protected abstract void LayoutPostprocessing();
+    protected abstract void FillTilemaps();
+    protected abstract void PathsGeneration();
+    protected abstract void PropsPlacing();
 
 
-    public void Generate(NoiseParameters noiseParam)
+    public void Generate(int seed)
     {
-        float[,] noise = NoiseGeneration();
-        GridGeneration();
+        Clean();
+        Init(seed);
+        NoiseGeneration();
         LayoutGeneration();
-        AdditionalLayoutGeneration();
+        LayoutPostprocessing();
+        FillTilemaps();
         PathsGeneration();
+        PropsPlacing();
     }
 
 }

@@ -2,12 +2,11 @@ using Enums;
 using Structs;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
+public class DefaultTerrainGeneration : TerrainGenerationBase
 {
 
     [Header("Grid settings")]
@@ -57,42 +56,45 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     private void Awake()
     {
         origin = transform.position;
-        Generate();
+        Generate(seed);
     }
 
     #region GeneratorFunctions
 
+    
     [ContextMenu("Generate")]
-    public void Generate()
+    public void CallGenerate()
     {
-        rng = new System.Random(seed);
-        UnityEngine.Random.InitState(seed);
+        Generate(seed);
+    }
 
-        foreach (Tilemap tilemapLayer in layers) 
+
+    protected override void Clean()
+    {
+        foreach (Tilemap tilemapLayer in layers)
         {
             tilemapLayer.ClearAllTiles();
         }
-
-        NoiseGeneration();
-        LayoutGeneration();
-        LayoutPostprocessing();
-        FillTilemaps();
-        PathsGeneration();
-        PropsPlacing();
     }
 
-    protected void NoiseGeneration()
+    protected override void Init(int seed)
+    {
+        rng = new System.Random(seed);
+        UnityEngine.Random.InitState(seed);
+    }
+
+    protected override void NoiseGeneration()
     {
         noiseMap = PerlinNoise.GetNoiseMap(rng, size.x, size.y, offset, scale, octaves, persistance, lacunarity);
     }
 
-    protected void LayoutGeneration()
+    protected override void LayoutGeneration()
     {
         grid = new GridSystem<TerrainCell>(size.x, size.y, cellSize, origin, CreateTerrainCell);
     }
 
 
-    protected void LayoutPostprocessing()
+    protected override void LayoutPostprocessing()
     {
         if (riverMinimalWidth == 0) return;
 
@@ -169,7 +171,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         FormRiver(completeRiverPath, riverAffectionRange);
     }
 
-    protected void FillTilemaps()
+    protected override void FillTilemaps()
     {
         for (int y = 0; y < size.y; y++)
         {
@@ -197,7 +199,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         }
     }
 
-    protected void PathsGeneration()
+    protected override void PathsGeneration()
     {
         Vector2Int gridCenter = size / 2;
         int agentLifetime = Math.Max(size.x, size.y);
@@ -217,7 +219,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         }
     }
 
-    protected void PropsPlacing()
+    protected override void PropsPlacing()
     {
         int agentLifetime = Mathf.CeilToInt(Math.Min(size.x, size.y) / (2 - propsDensity));
         Vector2Int objecPlacingInterval = new Vector2Int(2, Mathf.CeilToInt( (Math.Min(size.x, size.y) / 10f) * (1 - propsDensity) ));
