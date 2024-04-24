@@ -6,22 +6,24 @@ public class RoadBuilderAgent : RandomWalkAgent
 {
     private GridSystem<TerrainCell> grid;
 
-    private bool walksStraight;
+    private bool walksStraight = true;
+    private bool standsOnWater = false;
     private float defaultRotationChance;
     private float rotationChanceAfterDeviationFromStraightPath;
+    private Vector2Int startDirection;
+
+    private AgentRotation[] storedRotationsData;
 
     public RoadBuilderAgent(GridSystem<TerrainCell> grid, int lifetime, float rotationChance, float restoreRotationChance) : base(lifetime, rotationChance)
     {
         this.grid = grid;
-        rotationsList = new AgentRotation[] { new AgentRotation(AgentRotationDirection.Left, 0.5f), new AgentRotation(AgentRotationDirection.Right, 0.5f) };
         defaultRotationChance = rotationChance;
         rotationChanceAfterDeviationFromStraightPath = restoreRotationChance;
-        walksStraight = true;
     }
 
     protected override bool CanMoveTo(Vector2Int coordinates)
     {
-        return grid.ValidateCoordinates(coordinates);
+        return grid.ValidateCoordinates(coordinates); ;
     }
 
     protected override AgentRotation[] CalculateRotationsList(AgentRotation[] currentRotationsList, AgentRotationDirection lastRotation)
@@ -65,8 +67,31 @@ public class RoadBuilderAgent : RandomWalkAgent
         }
     }
 
+    protected override void OnExecute()
+    {
+        rotationsList = new AgentRotation[] { new AgentRotation(AgentRotationDirection.Left, 0.5f), new AgentRotation(AgentRotationDirection.Right, 0.5f) };
+        startDirection = forward;
+        walksStraight = true;
+        standsOnWater = false;
+    }
+
     protected override void OnLoop()
     {
+        // make agent walk straight when on water
+        bool onWater = grid.GetCell(agentPosition).NoiseValue < 0;
+        if (!standsOnWater && onWater)
+        {
+            storedRotationsData = rotationsList;
+            rotationsList = new AgentRotation[0];
+            walksStraight = true;
+            forward = startDirection;
+        }
+        else if (!onWater && standsOnWater)
+        {
+            rotationsList = storedRotationsData;
+        }
+        standsOnWater = onWater;
+
         if (agentPosition.x == 0 || agentPosition.x == grid.Width - 1 || agentPosition.y == 0 || agentPosition.y == grid.Height - 1)
             terminate = true;
     }

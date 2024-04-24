@@ -9,7 +9,7 @@ public class RandomWalkAgent
     private int startLifetime;
     protected float rotationChance;
 
-    private Vector2Int forward;
+    protected Vector2Int forward;
     protected AgentRotation[] rotationsList;
     protected bool terminate = false;
     
@@ -36,6 +36,9 @@ public class RandomWalkAgent
     private void Rotate()
     {
         AgentRotationDirection rotateTo = AgentRotationDirection.None;
+
+        if (rotationsList.Length == 0) return;
+
         if (Random.value < rotationChance)
         {
             float rotationPick = Random.value;

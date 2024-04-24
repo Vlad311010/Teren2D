@@ -2,6 +2,7 @@ using Enums;
 using Structs;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -22,12 +23,15 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [SerializeField] int seed;
 
     [Header("River settings")]
-    [SerializeField] int riverAffectionRange;
     [SerializeField] int riverMinimalWidth;
+    [SerializeField] int riverAffectionRange;
     [SerializeField] int riverMidpoints;
     [SerializeField] int riverWaving;
 
     [Header("Road settings")]
+    [SerializeField] Tilemap roadLayer;
+    [SerializeField] TileBase regularRoadTile;
+    [SerializeField] TileBase waterRoadTile;
     [SerializeField] WorldSides enableRoadTo;
 
     [Header("Props settings")]
@@ -52,7 +56,6 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     private void Awake()
     {
-        
         origin = transform.position;
         Generate();
     }
@@ -73,8 +76,8 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         NoiseGeneration();
         LayoutGeneration();
         LayoutPostprocessing();
-        PathsGeneration();
         FillTilemaps();
+        PathsGeneration();
         PropsPlacing();
     }
 
@@ -91,6 +94,8 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     protected void LayoutPostprocessing()
     {
+        if (riverMinimalWidth == 0) return;
+
         float rngValue = UnityEngine.Random.value;
         Vector2Int riverAxis = rngValue < 0.5f ? new Vector2Int(1, 0) : new Vector2Int(0, 1); // determine if river horizontal or vertical
 
@@ -164,23 +169,6 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         FormRiver(completeRiverPath, riverAffectionRange);
     }
 
-
-    protected void PathsGeneration()
-    {
-        Vector2Int gridCenter = size / 2;
-        int agentLifetime = Math.Max(size.x, size.y);
-        RoadBuilderAgent randomWalkAgent = new RoadBuilderAgent(grid, agentLifetime, 0.25f, 0.8f);
-        List<Vector2Int> directions = enableRoadTo.WorldSidesToDirections();
-        foreach (Vector2Int dir in directions)
-        {
-            List<Vector2Int> path = randomWalkAgent.Execute(gridCenter, dir);
-            for (int i = 0; i < path.Count; i++)
-            {
-                grid.GetCell(path[i]).NoiseValue = 2;
-            }
-        }
-    }
-
     protected void FillTilemaps()
     {
         for (int y = 0; y < size.y; y++)
@@ -209,17 +197,35 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         }
     }
 
+    protected void PathsGeneration()
+    {
+        Vector2Int gridCenter = size / 2;
+        int agentLifetime = Math.Max(size.x, size.y);
+        RoadBuilderAgent randomWalkAgent = new RoadBuilderAgent(grid, agentLifetime, 0.25f, 0.8f);
+        List<Vector2Int> directions = enableRoadTo.WorldSidesToDirections();
+        foreach (Vector2Int dir in directions)
+        {
+            List<Vector2Int> path = randomWalkAgent.Execute(gridCenter, dir);
+
+            foreach (Vector2Int cell in path)
+            {
+                if (grid.GetCell(cell.x, cell.y).NoiseValue >= 0)
+                    TilemapUtils.SetTile(roadLayer, grid.GetWorldPosition(cell), regularRoadTile);
+                else
+                    TilemapUtils.SetTile(roadLayer, grid.GetWorldPosition(cell), waterRoadTile);
+            }
+        }
+    }
+
     protected void PropsPlacing()
     {
-        
         int agentLifetime = Mathf.CeilToInt(Math.Min(size.x, size.y) / (2 - propsDensity));
-        Vector2Int objecPlacingInterval = new Vector2Int(2, Mathf.CeilToInt( (Math.Min(size.x, size.y) / 8f) * (1 - propsDensity) ));
-        PropsPlacingAgent propsPlacingAgent = new PropsPlacingAgent(agentLifetime, 0.3f, objecPlacingInterval);
-
+        Vector2Int objecPlacingInterval = new Vector2Int(2, Mathf.CeilToInt( (Math.Min(size.x, size.y) / 10f) * (1 - propsDensity) ));
+        PropsPlacingAgent propsPlacingAgent = new PropsPlacingAgent(size, agentLifetime, 0.3f, objecPlacingInterval);
 
         Vector2Int startPosition;
         Vector2Int lookDirection;
-        int loops = (int)(Math.Max(size.x, size.y) * propsDensity);
+        int loops = (int)(Mathf.Sqrt(size.x * size.y) * propsDensity);
         for (int i = 0; i < loops; i++)
         {
             startPosition = grid.RandomPoint();
@@ -230,6 +236,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
             {
                 if (TilemapUtils.GetTile<TileBase>(propsLayer, new Vector3Int(cell.x, cell.y)) != null)
                     continue;
+
 
                 if (grid.GetCell(cell).NoiseValue > 0)
                     TilemapUtils.SetTile(propsLayer, grid.GetWorldPosition(cell), groundPropsTile);
@@ -273,18 +280,17 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
             Vector2Int nearestRiverCellByX = riverPath.Where(c => c.Coordinates.x == cell.Coordinates.x).Select(c => c.Coordinates).FirstOrDefault();
             Vector2Int nearestRiverCellByY = riverPath.Where(c => c.Coordinates.y == cell.Coordinates.y).Select(c => c.Coordinates).FirstOrDefault();
 
-            int distanceFromMainPath;
+            float distanceFromMainPath;
             if (nearestRiverCellByX == null || nearestRiverCellByY == null)
                 distanceFromMainPath = 0;
-            else 
-                distanceFromMainPath = Math.Max(Math.Abs(nearestRiverCellByX.x - cell.Coordinates.x), Math.Abs(nearestRiverCellByY.y - cell.Coordinates.y));
+            else
+                distanceFromMainPath = Math.Min(Vector2Int.Distance(nearestRiverCellByX, cell.Coordinates), Vector2Int.Distance(nearestRiverCellByY, cell.Coordinates));
 
             if (distanceFromMainPath < riverMinimalWidth)
                 cell.NoiseValue = -1;
             else
             {
-                cell.NoiseValue = ((-1 / distanceFromMainPath * distanceFromMainPath) + cell.NoiseValue) / 2;
-                // cell.NoiseValue *= UnityEngine.Random.value > 0.8f ? -1 : 1;
+                cell.NoiseValue = UnityEngine.Random.value >  0.8f ? -1 : UnityEngine.Random.Range(0.65f, 1f);
             }
             
         }
@@ -342,6 +348,11 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     #region Editor
     private void OnValidate()
     {
+        size.x = size.x <= 0 ? 1 : size.x;
+        size.y = size.y <= 0 ? 1 : size.y;
+            
+        riverAffectionRange = Math.Clamp(riverAffectionRange, riverMinimalWidth, int.MaxValue);
+
         for (int i = 0; i < tiles.Length; i++)
         {
             tiles[i].layer = Math.Clamp(tiles[i].layer, 0, layers.Length - 1);
