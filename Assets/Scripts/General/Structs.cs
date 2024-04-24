@@ -56,4 +56,17 @@ namespace Structs
         public TileBase tile;   
         public float highProbability;
     }
+
+    [Serializable]
+    public struct AgentRotation
+    {
+        public AgentRotationDirection direction;
+        public float probability;
+
+        public AgentRotation(AgentRotationDirection direction, float probability)
+        {
+            this.direction = direction;
+            this.probability = probability;
+        }
+    }
 }

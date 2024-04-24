@@ -48,4 +48,16 @@ public static class Extensions
     {
         return new Vector2Int(vector.y, vector.x);
     }
+
+    public static Vector2Int Rotate(this Vector2Int vector, float angle)
+    {
+        // Convert angle to radians
+        float radians = angle * Mathf.Deg2Rad;
+
+        // Rotate vector
+        int newX = Mathf.RoundToInt(vector.x * Mathf.Cos(radians) - vector.y * Mathf.Sin(radians));
+        int newY = Mathf.RoundToInt(vector.x * Mathf.Sin(radians) + vector.y * Mathf.Cos(radians));
+
+        return new Vector2Int(newX, newY);
+    }
 }

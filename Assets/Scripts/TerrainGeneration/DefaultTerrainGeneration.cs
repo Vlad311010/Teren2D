@@ -157,7 +157,13 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     protected void PathsGeneration()
     {
+        RoadBuilderAgent randomWalkAgent = new RoadBuilderAgent(grid, size / 2, Vector2Int.up, 70, 0.25f, 0.5f);
 
+        List<Vector2Int> path = randomWalkAgent.Execute();
+        for (int i = 1; i < path.Count; i++)
+        {
+            grid.GetCell(path[i]).NoiseValue = -1;
+        }
     }
 
     protected void FillTilemaps()

@@ -6,6 +6,9 @@ using UnityEngine;
 [Serializable]
 public class GridSystem<T> where T : GridCellBase
 {
+    public int Width => width;
+    public int Height => height;
+
     public event EventHandler<OnCellChangedEventArgs> OnCellChanged;
     public class OnCellChangedEventArgs : EventArgs
     {
