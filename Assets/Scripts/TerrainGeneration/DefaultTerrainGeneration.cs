@@ -1,3 +1,4 @@
+using Enums;
 using Structs;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,10 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [SerializeField] int riverMinimalWidth;
     [SerializeField] int riverMidpoints;
     [SerializeField] int riverWaving;
+
+    [Header("Road settings")]
+    [SerializeField] WorldSides enableRoadTo;
+
 
 
     [Header("Tilemaps")]
@@ -158,11 +163,12 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     protected void PathsGeneration()
     {
         RoadBuilderAgent randomWalkAgent = new RoadBuilderAgent(grid, size / 2, Vector2Int.up, 70, 0.25f, 0.5f);
+        Debug.Log()
 
         List<Vector2Int> path = randomWalkAgent.Execute();
         for (int i = 1; i < path.Count; i++)
         {
-            grid.GetCell(path[i]).NoiseValue = -1;
+            grid.GetCell(path[i]).NoiseValue = 2;
         }
     }
 

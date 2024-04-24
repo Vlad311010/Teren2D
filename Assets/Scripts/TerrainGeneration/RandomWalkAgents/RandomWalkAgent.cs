@@ -23,7 +23,6 @@ public class RandomWalkAgent
         this.lifetime = lifetime;
         this.rotationChance = rotationChance;
 
-        path = new List<Vector2Int>() { startPosition };
         rotationsList = new AgentRotation[] { new AgentRotation(AgentRotationDirection.Left, 0.5f), new AgentRotation(AgentRotationDirection.Right, 0.5f) };
     }
 
@@ -89,7 +88,24 @@ public class RandomWalkAgent
         
     }
 
+
+    public List<Vector2Int> Execute(Vector2Int newPosition, Vector2Int newLookDirection)
+    {
+        agentPosition = newPosition;
+        forward = newLookDirection;
+
+        return Execute();
+    }
+
+
     public List<Vector2Int> Execute()
+    {
+        path = new List<Vector2Int>() { agentPosition };
+        return Loop();
+    }
+
+
+    private List<Vector2Int> Loop()
     {
         Rotate();
         Move();
@@ -99,7 +115,7 @@ public class RandomWalkAgent
         if (lifetime <= 0 || terminate)
             return path;
         else
-            return Execute();
+            return Loop();
     }
 
 }
