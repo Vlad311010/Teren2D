@@ -6,13 +6,14 @@ using UnityEngine;
 public class RandomWalkAgent
 {
     protected Vector2Int agentPosition;
-    private int lifetime;
+    private int startLifetime;
     protected float rotationChance;
 
     private Vector2Int forward;
     protected AgentRotation[] rotationsList;
     protected bool terminate = false;
     
+    private int currentLifetime;
     private List<Vector2Int> path;
 
     public RandomWalkAgent(Vector2Int startPosition, Vector2Int lookDirection, int lifetime, float rotationChance)
@@ -20,7 +21,7 @@ public class RandomWalkAgent
         agentPosition = startPosition;
         forward = lookDirection;
 
-        this.lifetime = lifetime;
+        this.startLifetime = lifetime;
         this.rotationChance = rotationChance;
 
         rotationsList = new AgentRotation[] { new AgentRotation(AgentRotationDirection.Left, 0.5f), new AgentRotation(AgentRotationDirection.Right, 0.5f) };
@@ -83,7 +84,7 @@ public class RandomWalkAgent
         return currentRotationsList;
     }
 
-    protected virtual void UpdateStatus()
+    protected virtual void OnLoop()
     {
         
     }
@@ -100,6 +101,8 @@ public class RandomWalkAgent
 
     public List<Vector2Int> Execute()
     {
+        terminate = false;
+        currentLifetime = startLifetime;
         path = new List<Vector2Int>() { agentPosition };
         return Loop();
     }
@@ -107,12 +110,12 @@ public class RandomWalkAgent
 
     private List<Vector2Int> Loop()
     {
+        OnLoop();
         Rotate();
         Move();
-        UpdateStatus();
 
-        lifetime--;
-        if (lifetime <= 0 || terminate)
+        currentLifetime--;
+        if (currentLifetime <= 0 || terminate)
             return path;
         else
             return Loop();

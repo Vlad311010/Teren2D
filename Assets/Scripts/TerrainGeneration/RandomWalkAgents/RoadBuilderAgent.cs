@@ -65,7 +65,7 @@ public class RoadBuilderAgent : RandomWalkAgent
         }
     }
 
-    protected override void UpdateStatus()
+    protected override void OnLoop()
     {
         if (agentPosition.x == 0 || agentPosition.x == grid.Width - 1 || agentPosition.y == 0 || agentPosition.y == grid.Height - 1)
             terminate = true;

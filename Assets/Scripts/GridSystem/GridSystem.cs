@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -64,6 +65,14 @@ public class GridSystem<T> where T : GridCellBase
     {
         return x >= 0 && y >= 0 && x < width && y < height;
     }
+
+    public Vector2Int RandomPoint()
+    {
+        int x = UnityEngine.Random.Range(0, width);
+        int y = UnityEngine.Random.Range(0, height);
+        return new Vector2Int(x, y);
+    }
+
 
     public T GetCell(Vector2Int pos)
     {

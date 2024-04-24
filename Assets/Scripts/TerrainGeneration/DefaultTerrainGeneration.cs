@@ -32,6 +32,9 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [Header("Road settings")]
     [SerializeField] WorldSides enableRoadTo;
 
+    [Header("Props settings")]
+    [SerializeField] TileBase propsTile;
+
 
 
     [Header("Tilemaps")]
@@ -71,6 +74,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
         LayoutPostprocessing();
         PathsGeneration();
         FillTilemaps();
+        PropsPlacing();
     }
 
     protected void NoiseGeneration()
@@ -162,13 +166,17 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 
     protected void PathsGeneration()
     {
-        RoadBuilderAgent randomWalkAgent = new RoadBuilderAgent(grid, size / 2, Vector2Int.up, 70, 0.25f, 0.5f);
-        Debug.Log()
-
-        List<Vector2Int> path = randomWalkAgent.Execute();
-        for (int i = 1; i < path.Count; i++)
+        Vector2Int gridCenter = size / 2;
+        int agentLifetime = Math.Max(size.x, size.y) * 2;
+        RoadBuilderAgent randomWalkAgent = new RoadBuilderAgent(grid, gridCenter, Vector2Int.up, agentLifetime, 0.25f, 0.8f);
+        List<Vector2Int> directions = enableRoadTo.WorldSidesToDirections();
+        foreach (Vector2Int dir in directions)
         {
-            grid.GetCell(path[i]).NoiseValue = 2;
+            List<Vector2Int> path = randomWalkAgent.Execute(gridCenter, dir);
+            for (int i = 0; i < path.Count; i++)
+            {
+                grid.GetCell(path[i]).NoiseValue = 2;
+            }
         }
     }
 
@@ -198,6 +206,11 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
                 }
             }
         }
+    }
+
+    protected void PropsPlacing()
+    {
+        
     }
     #endregion
 
@@ -238,12 +251,15 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
             if (nearestRiverCellByX == null || nearestRiverCellByY == null)
                 distanceFromMainPath = 0;
             else 
-                distanceFromMainPath = Math.Min(Math.Abs(nearestRiverCellByX.x - cell.Coordinates.x), Math.Abs(nearestRiverCellByY.y - cell.Coordinates.y));
+                distanceFromMainPath = Math.Max(Math.Abs(nearestRiverCellByX.x - cell.Coordinates.x), Math.Abs(nearestRiverCellByY.y - cell.Coordinates.y));
 
             if (distanceFromMainPath < riverMinimalWidth)
                 cell.NoiseValue = -1;
             else
+            {
                 cell.NoiseValue = ((-1 / distanceFromMainPath * distanceFromMainPath) + cell.NoiseValue) / 2;
+                // cell.NoiseValue *= UnityEngine.Random.value > 0.8f ? -1 : 1;
+            }
             
         }
     }

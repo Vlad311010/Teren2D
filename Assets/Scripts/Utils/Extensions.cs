@@ -1,6 +1,8 @@
 
+using Enums;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public static class Extensions
 {
@@ -59,5 +61,20 @@ public static class Extensions
         int newY = Mathf.RoundToInt(vector.x * Mathf.Sin(radians) + vector.y * Mathf.Cos(radians));
 
         return new Vector2Int(newX, newY);
+    }
+
+    public static List<Vector2Int> WorldSidesToDirections(this WorldSides worldSides)
+    {
+        List<Vector2Int> directions = new List<Vector2Int>();
+        if (worldSides.HasFlag(WorldSides.North))
+            directions.Add(Vector2Int.up);
+        if (worldSides.HasFlag(WorldSides.East))
+            directions.Add(Vector2Int.right);
+        if (worldSides.HasFlag(WorldSides.South))
+            directions.Add(Vector2Int.down);
+        if (worldSides.HasFlag(WorldSides.West))
+            directions.Add(Vector2Int.left);
+
+        return directions;
     }
 }
