@@ -2,11 +2,9 @@ using Enums;
 using Structs;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using UnityEngine.UIElements;
 
 public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
 {
@@ -33,7 +31,10 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [SerializeField] WorldSides enableRoadTo;
 
     [Header("Props settings")]
-    [SerializeField] TileBase propsTile;
+    [SerializeField] Tilemap propsLayer;
+    [SerializeField] TileBase groundPropsTile;
+    [SerializeField] TileBase waterPropsTile;
+    [Range(0, 1)][SerializeField] float propsDensity = 0.5f;
 
 
 
@@ -41,7 +42,7 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     [SerializeField] Tilemap[] layers;
 
     [Header("Tiles")]
-    [SerializeField] Tile defaultGroundTile;
+    [SerializeField] TileBase defaultGroundTile;
     [SerializeField] NoiseClampData[] tiles;
 
     private Vector3 origin;
@@ -167,8 +168,8 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     protected void PathsGeneration()
     {
         Vector2Int gridCenter = size / 2;
-        int agentLifetime = Math.Max(size.x, size.y) * 2;
-        RoadBuilderAgent randomWalkAgent = new RoadBuilderAgent(grid, gridCenter, Vector2Int.up, agentLifetime, 0.25f, 0.8f);
+        int agentLifetime = Math.Max(size.x, size.y);
+        RoadBuilderAgent randomWalkAgent = new RoadBuilderAgent(grid, agentLifetime, 0.25f, 0.8f);
         List<Vector2Int> directions = enableRoadTo.WorldSidesToDirections();
         foreach (Vector2Int dir in directions)
         {
@@ -211,6 +212,31 @@ public class DefaultTerrainGeneration : MonoBehaviour // TerrainGenerationBase
     protected void PropsPlacing()
     {
         
+        int agentLifetime = Mathf.CeilToInt(Math.Min(size.x, size.y) / (2 - propsDensity));
+        Vector2Int objecPlacingInterval = new Vector2Int(2, Mathf.CeilToInt( (Math.Min(size.x, size.y) / 8f) * (1 - propsDensity) ));
+        PropsPlacingAgent propsPlacingAgent = new PropsPlacingAgent(agentLifetime, 0.3f, objecPlacingInterval);
+
+
+        Vector2Int startPosition;
+        Vector2Int lookDirection;
+        int loops = (int)(Math.Max(size.x, size.y) * propsDensity);
+        for (int i = 0; i < loops; i++)
+        {
+            startPosition = grid.RandomPoint();
+            lookDirection = (UnityEngine.Random.insideUnitCircle + Vector2.up * 0.01f).normalized.ToVector2Int();
+            
+            propsPlacingAgent.Execute(startPosition, lookDirection);
+            foreach (Vector2Int cell in propsPlacingAgent.CellsToPlaceProps)
+            {
+                if (TilemapUtils.GetTile<TileBase>(propsLayer, new Vector3Int(cell.x, cell.y)) != null)
+                    continue;
+
+                if (grid.GetCell(cell).NoiseValue > 0)
+                    TilemapUtils.SetTile(propsLayer, grid.GetWorldPosition(cell), groundPropsTile);
+                else
+                    TilemapUtils.SetTile(propsLayer, grid.GetWorldPosition(cell), waterPropsTile);
+            }
+        }
     }
     #endregion
 

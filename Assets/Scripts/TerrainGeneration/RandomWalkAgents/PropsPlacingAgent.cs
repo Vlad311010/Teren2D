@@ -3,14 +3,14 @@ using UnityEngine;
 
 public class PropsPlacingAgent : RandomWalkAgent
 {
-    public List<Vector2Int> TilesToPlaceProps => tilesToPlaceProps;
+    public List<Vector2Int> CellsToPlaceProps => cellsToPlaceProps;
 
-    private List<Vector2Int> tilesToPlaceProps;
+    private List<Vector2Int> cellsToPlaceProps;
     private Vector2Int objPlacingInterval;
 
     private int stepsToPlaceObject;
 
-    public PropsPlacingAgent(Vector2Int startPosition, Vector2Int lookDirection, int lifetime, float rotationChance, Vector2Int objPlacingInterval) : base(startPosition, lookDirection, lifetime, rotationChance)
+    public PropsPlacingAgent(int lifetime, float rotationChance, Vector2Int objPlacingInterval) : base(lifetime, rotationChance)
     {
         this.objPlacingInterval = objPlacingInterval;
     }
@@ -25,12 +25,18 @@ public class PropsPlacingAgent : RandomWalkAgent
         }
     }
 
+    protected override void OnExecute()
+    {
+        stepsToPlaceObject = objPlacingInterval.RandomRange();
+        cellsToPlaceProps = new List<Vector2Int>();
+    }
+
 
     private void PlaceObject()
     {
-        if (!tilesToPlaceProps.Contains(agentPosition))
+        if (!cellsToPlaceProps.Contains(agentPosition))
         {
-            tilesToPlaceProps.Add(agentPosition);
+            cellsToPlaceProps.Add(agentPosition);
         }
     }
 }

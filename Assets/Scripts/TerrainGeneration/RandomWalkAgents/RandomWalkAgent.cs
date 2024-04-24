@@ -16,11 +16,8 @@ public class RandomWalkAgent
     private int currentLifetime;
     private List<Vector2Int> path;
 
-    public RandomWalkAgent(Vector2Int startPosition, Vector2Int lookDirection, int lifetime, float rotationChance)
+    public RandomWalkAgent(int lifetime, float rotationChance)
     {
-        agentPosition = startPosition;
-        forward = lookDirection;
-
         this.startLifetime = lifetime;
         this.rotationChance = rotationChance;
 
@@ -84,26 +81,24 @@ public class RandomWalkAgent
         return currentRotationsList;
     }
 
-    protected virtual void OnLoop()
-    {
-        
-    }
 
+    protected virtual void OnExecute() { }
+    protected virtual void OnLoop() { }
 
     public List<Vector2Int> Execute(Vector2Int newPosition, Vector2Int newLookDirection)
     {
         agentPosition = newPosition;
         forward = newLookDirection;
-
+        OnExecute();
         return Execute();
     }
 
 
-    public List<Vector2Int> Execute()
+    private List<Vector2Int> Execute()
     {
+        path = new List<Vector2Int>() { agentPosition };
         terminate = false;
         currentLifetime = startLifetime;
-        path = new List<Vector2Int>() { agentPosition };
         return Loop();
     }
 

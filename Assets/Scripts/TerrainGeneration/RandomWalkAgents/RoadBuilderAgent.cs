@@ -10,7 +10,7 @@ public class RoadBuilderAgent : RandomWalkAgent
     private float defaultRotationChance;
     private float rotationChanceAfterDeviationFromStraightPath;
 
-    public RoadBuilderAgent(GridSystem<TerrainCell> grid, Vector2Int startPosition, Vector2Int lookDirection, int lifetime, float rotationChance, float restoreRotationChance) : base(startPosition, lookDirection, lifetime, rotationChance)
+    public RoadBuilderAgent(GridSystem<TerrainCell> grid, int lifetime, float rotationChance, float restoreRotationChance) : base(lifetime, rotationChance)
     {
         this.grid = grid;
         rotationsList = new AgentRotation[] { new AgentRotation(AgentRotationDirection.Left, 0.5f), new AgentRotation(AgentRotationDirection.Right, 0.5f) };

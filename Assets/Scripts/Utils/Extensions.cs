@@ -41,6 +41,11 @@ public static class Extensions
         return Random.Range(vector.x, vector.y);
     }
 
+    public static Vector2Int ToVector2Int(this Vector2 vector)
+    {
+        return new Vector2Int((int)vector.x, (int)vector.y);
+    }
+
     public static int RandomRange(this Vector2Int vector)
     {
         return Random.Range(vector.x, vector.y + 1);
